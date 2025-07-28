@@ -32,7 +32,7 @@
             <div class="container">
             <div class="hero-content">
             
-                <h1>Explore your Dream Place <br> With RV66 Rentals</h1>
+                <h1>Explor your Dream Place <br> With RV66 Rentals</h1>
               
                 <div class="subtitle-wrapper about">
  
