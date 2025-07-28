@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+       
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="../dist/css/hotel-datepicker.css"
+        />
+        <link rel="stylesheet" type="text/css" href="css/main.css" />
+    </head>
+    <body>
+        <div class="page">
+           
+              
+
+                <div class="demo__item">
+                    <div class="demo__input">
+                        <input
+                            type="text"
+                            id="demo17"
+                            value=""
+                            aria-label="Check-in and check-out dates"
+                            aria-describedby="demo17-input-description"
+                        />
+                    </div>
+                    <p class="demo__description" id="demo17-input-description">
+                        Disable check-in or check-out on some dates. Check-in
+                        disabled on: <code id="code-demo17-a"></code>. Check-out
+                        disabled on <code id="code-demo17-b"></code>.
+                    </p>
+                    <div class="demo__config">
+                        <pre id="pre-demo17"></pre>
+                    </div>
+                </div>
+
+
+            </div>
+
+        </div>
+
+        <script
+            type="text/javascript"
+            src="../node_modules/fecha/dist/fecha.min.js"
+        ></script>
+        <script
+            type="text/javascript"
+            src="../dist/js/hotel-datepicker.js"
+        ></script>
+
+        <script type="text/javascript">
+            (function () {
+              
+
+                // ------------------- DEMO 17 ------------------- //
+
+                var date1 = new Date();
+                var date2 = new Date();
+                var date3 = new Date();
+                var date4 = new Date();
+                var date5 = new Date();
+                var date6 = new Date();
+                date1.setDate(date1.getDate() + 3);
+                date2.setDate(date2.getDate() + 10);
+                date3.setDate(date3.getDate() + 6);
+                date4.setDate(date4.getDate() + 15);
+
+
+
+                var demo17 = new HotelDatepicker(
+                    document.getElementById("demo17"),
+                    {
+                        noCheckInDates: [
+                            fecha.format(date1, "YYYY-MM-DD"),
+                            fecha.format(date2, "YYYY-MM-DD"),
+                        ],
+                        noCheckOutDates: [
+                            fecha.format(date3, "YYYY-MM-DD"),
+                            fecha.format(date4, "YYYY-MM-DD"),
+                        ],
+                        disabledDates: [
+                            '2023-10-05',
+                            '2023-10-01',
+                            '2023-10-04',
+                            '2023-10-06',
+                            '2023-10-09',
+                            '2023-10-19'
+                        ]
+                    }
+                );
+
+                
+
+        
+            })();
+        </script>
+    </body>
+</html>

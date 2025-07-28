@@ -1,0 +1,236 @@
+<?php
+
+namespace App\Http\Controllers\Payment;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\BookingRequest;
+use App\Models\Property;
+use App\Models\Payment;
+use App\Models\Location;
+use net\authorize\api\contract\v1 as AnetAPI;
+use net\authorize\api\controller as AnetController;
+use Session;
+use ModelHelper;
+Use MailHelper;
+
+class InstapayController extends Controller
+{
+    function index(Request $request,$id){
+        
+        if(ModelHelper::getDataFromSetting('which_payment_gateway')=="stripe"){
+            return redirect()->route("stripe_payment",$id);
+        }
+        if(ModelHelper::getDataFromSetting('which_payment_gateway')=="paypal"){
+            return redirect()->route("paypal_payment",$id);
+        }
+        if(ModelHelper::getDataFromSetting('which_payment_gateway')=="authorize"){
+            return redirect()->route("authorize_payment",$id);
+        }
+       
+
+        $booking=BookingRequest::find($id);
+        if($booking){
+            $property=Property::find($booking->property_id);
+            if($property){
+                $data = new \stdClass();
+                    $data->name=" Payment Request ";
+                    $data->meta_title=" Payment Request ";
+                    $data->meta_keywords=" Payment Request ";
+                    $data->meta_description=" Payment Request ";
+                    $booking=$booking->toArray();
+                    //dd($data,$booking,$property);
+                return view("front.booking.payment.instapay",compact("booking","data","property"));
+            }
+        }
+        return abort(404);//
+    }
+
+    function indexPost(Request $request,$id){
+        $booking=BookingRequest::find($id);
+        if($booking){
+            $property=Property::find($booking->property_id);
+            if($property){
+                $location=Location::find($property->location_id);
+                $flex_amount=0;
+                if($location){
+                        $flex_amount=($location->amount);
+                }
+            
+                $key=ModelHelper::getDataFromSetting('instapay_key');
+                $pin=ModelHelper::getDataFromSetting('instapay_pin');
+
+                $base_64=base64_encode($key.":".$pin);
+
+      
+        try {
+             $input = $request->input();
+            if(ModelHelper::getDataFromSetting('payment-type')=="live"){
+                 $amount=$request->amount;
+                  $url='https://api.accept.blue/api/v2/transactions/charge';
+            }else{
+                 $amount=100;
+                $url='https://api.develop.accept.blue/api/v2/transactions/charge';
+            }
+          //dd($amount);
+            $name=$request->first_name .' '.$request->last_name;
+            $cardNumber=$request->cardNumber;
+            $cvv=$request->cvv;
+            $exy_month=$request->get("expiration-month");
+            $exy_year=$request->get("expiration-year");
+
+
+          
+            $json=('{"amount": '.$amount.',"name": "'.$name.'","expiry_month": '.$exy_month.',"expiry_year": '.$exy_year.',"cvv2": "'.$cvv.'","card": "'.$cardNumber.'","capture": true,"save_card": false,"billing_info": {
+"first_name": "'.$request->first_name.'",
+"last_name": "'.$request->last_name.'",
+"street": "'.$request->street.'",
+"street2": "'.$request->street2.'",
+"state": "'.$request->state.'",
+"city": "'.$request->city.'",
+"zip": "'.$request->zip.'",
+"country": "'.$request->country.'",
+"phone": "'.$request->mobile.'"
+}}');
+
+//dd($json);
+          
+            $curl = curl_init();
+            curl_setopt_array($curl, array(
+              CURLOPT_URL => $url,
+              CURLOPT_RETURNTRANSFER => true,
+              CURLOPT_ENCODING => '',
+              CURLOPT_MAXREDIRS => 10,
+              CURLOPT_TIMEOUT => 0,
+              CURLOPT_FOLLOWLOCATION => true,
+              CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+              CURLOPT_CUSTOMREQUEST => 'POST',
+              CURLOPT_POSTFIELDS =>$json,
+              CURLOPT_HTTPHEADER => array(
+                'Authorization: Basic  '.$base_64,
+                'Content-type: application/json'
+              ),
+            ));
+
+              $response = curl_exec($curl);
+            $err = curl_error($curl);
+
+            curl_close($curl);
+            if ($err) {
+                $message=$err;
+            } 
+            else {
+                $data= json_decode($response,true);
+                if(isset($data['status'])){
+                    if($data['status']=="Approved"){
+    $queue_ref_id='';
+
+//                         if($flex_amount>0){
+
+//             $json=('{"amount": '.$flex_amount.',"name": "'.$name.'","expiry_month": '.$exy_month.',"expiry_year": '.$exy_year.',"cvv2": "'.$cvv.'","card": "'.$cardNumber.'","capture": false,"save_card": true,"billing_info": {
+// "first_name": "'.$request->first_name.'",
+// "last_name": "'.$request->last_name.'",
+// "street": "'.$request->street.'",
+// "street2": "'.$request->street2.'",
+// "state": "'.$request->state.'",
+// "city": "'.$request->city.'",
+// "zip": "'.$request->zip.'",
+// "country": "'.$request->country.'",
+// "phone": "'.$request->mobile.'"
+// }}');
+
+// //dd($json);
+          
+//             $curl = curl_init();
+//             curl_setopt_array($curl, array(
+//               CURLOPT_URL => $url,
+//               CURLOPT_RETURNTRANSFER => true,
+//               CURLOPT_ENCODING => '',
+//               CURLOPT_MAXREDIRS => 10,
+//               CURLOPT_TIMEOUT => 0,
+//               CURLOPT_FOLLOWLOCATION => true,
+//               CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+//               CURLOPT_CUSTOMREQUEST => 'POST',
+//               CURLOPT_POSTFIELDS =>$json,
+//               CURLOPT_HTTPHEADER => array(
+//                 'Authorization: Basic  '.$base_64,
+//                 'Content-type: application/json'
+//               ),
+//             ));
+        
+//               $response = curl_exec($curl);
+//             $err = curl_error($curl);
+//               if ($err) {
+//                 $message=$err;
+//             } 
+//             else {
+//                 $data123= json_decode($response,true);
+//                 $queue_ref_id=$data123['reference_number'];
+//             }
+
+//             curl_close($curl);
+//         }
+
+
+
+                             $payment=Payment::create([
+                            'booking_id'=>$booking->id,
+                            'receipt_url'=>'' ,
+                            'customer_id'=>$queue_ref_id ,
+                            'amount'=>$request->amount,
+                            'tran_id'=>$data['reference_number'],
+                            'description'=>json_encode($request->all()),
+                            'main_response'=>json_encode($data),
+                            'type'=>"instapay",
+                            'status'=>"complete"
+                        ]);
+                        ModelHelper::finalEmailAndUpdateBookingPayment($id,$booking,$payment,$property);
+
+                        return redirect('payment/success/'.$payment->id)->with("success","Paid Successfully");
+                    }else{
+                        if(isset($data['error_message'])){
+                            $message=$data['error_message'];
+                        }else{
+                            $message="something happen";
+                        }
+                    }
+                }else{
+                    $message="something happen";
+                }
+               //  dd($request->all(),$id,$base_64,$data);
+                
+                     
+                   
+
+
+
+                    return back()->with("danger", $message);
+               
+                
+            }
+
+                       
+                
+
+
+              
+      
+        }  catch (Exception $e) {
+     
+            $message =$e->getError()->message ;
+        }
+        
+  
+        
+          
+         }else{
+            $message="property is not longer";
+         }
+        }else{
+            $message="Booking is invalid";
+        }
+        return redirect()->back()->with("danger",$message);
+    }
+
+
+}
