@@ -1,0 +1,1 @@
+<?php echo $email_body; ?><?php /**PATH /home/rv66rental/htdocs/www.rv66rental.com/projects/resources/views/mail/dummyMail.blade.php ENDPATH**/ ?>

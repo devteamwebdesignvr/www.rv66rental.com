@@ -95,6 +95,7 @@ class ModelHelper{
         $to=$data->email;
         $admin_subject="Booking Confirmation for ".$property->name;
         MailHelper::emailSenderByController($html,$to,$admin_subject,['uploads/files/pdf/'.$pdf_name]);
+        //dd($pdf_name);
     }
     
     public function getImageByProduct($product_id){

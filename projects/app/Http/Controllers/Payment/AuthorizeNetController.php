@@ -498,8 +498,20 @@ class AuthorizeNetController extends Controller
     }
 
     function twoDayBeforePaymentData(){
-        $date=date('Y-m-d', strtotime(' +2 day'));
-        $events = BookingRequest::where(["booking_status"=>"booking-confirmed"])->whereNull("refund_tran_id")->where("checkin",$date)->get();
+        //$date=date('Y-m-d', strtotime(' +2 day'));
+        // $events = BookingRequest::where(["booking_status"=>"booking-confirmed"])->whereNull("refund_tran_id")->where("checkin",$date)->get();
+      
+        $dates = [
+            date('Y-m-d'), //today
+            date('Y-m-d', strtotime('+1 day')), // tomorrow
+            date('Y-m-d', strtotime('+2 day'))  // day after tomorrow
+        ];
+        $events = BookingRequest::where("booking_status", "booking-confirmed")
+    				->whereNull("refund_tran_id")
+    				->whereIn("checkin", $dates)
+    				->get();
+      
+      
         foreach($events as $booking){
             if($booking->customer_profile_id){
                 if($booking->customer_profile_payment_id){
