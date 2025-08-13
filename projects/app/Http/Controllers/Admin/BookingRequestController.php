@@ -284,6 +284,13 @@ class BookingRequestController extends Controller{
         //$to = 'developerwebdesignvr@gmail.com';
         $admin_subject="Booking Confirmation  for ".$property->name;
         MailHelper::emailSenderByController($html,$to,$admin_subject,['uploads/files/pdf/'.$pdf_name]);
+
+        $html= view("mail.booking-first-customer",compact("property","data","payment"))->render();
+        $to=$data->email;
+        //$to = 'developerwebdesignvr@gmail.com';
+        $admin_subject="Booking Confirmation for ".$property->name;
+        MailHelper::emailSenderByController($html,$to,$admin_subject,['uploads/files/pdf/'.$pdf_name]);
+
         dd('Confirmation Email Sent Successfully');
     }  
       
